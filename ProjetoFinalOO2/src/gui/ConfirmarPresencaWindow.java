@@ -5,7 +5,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
+
 import dao.InscricaoDao;
+import dao.BancoDados;
 import entities.Evento;
 import service.LoginManager;
 
@@ -23,12 +25,12 @@ public class ConfirmarPresencaWindow extends JFrame {
         setContentPane(contentPane);
         contentPane.setLayout(null);
 
-        JLabel lblTitulo = new JLabel("Eventos para Confirmar Presença");
+        JLabel lblTitulo = new JLabel("Eventos para Confirmação de Presença");
         lblTitulo.setBounds(180, 10, 250, 15);
         contentPane.add(lblTitulo);
 
-        // Tabela para exibir eventos
-        String[] colunas = {"ID", "Título", "Data", "Hora"};
+        // Tabela para exibir os eventos onde a presença pode ser confirmada
+        String[] colunas = {"ID", "Título", "Data", "Hora", "Local"};
         DefaultTableModel modeloTabela = new DefaultTableModel(colunas, 0);
         tabelaEventos = new JTable(modeloTabela);
         JScrollPane scrollPane = new JScrollPane(tabelaEventos);
@@ -45,12 +47,34 @@ public class ConfirmarPresencaWindow extends JFrame {
         });
         contentPane.add(btnConfirmar);
 
-        carregarEventosParaConfirmacao();
+        try {
+            inicializarConexao();
+            carregarEventosParaConfirmacao();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao carregar eventos: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
     }
 
+    /**
+     * Inicializa a conexão com o banco de dados para garantir que a conexão não seja nula.
+     */
+    private void inicializarConexao() throws Exception {
+        if (!BancoDados.getConexao().isValid(1)) {
+            BancoDados.conectar();
+        }
+        InscricaoDao.inicializarConexao(BancoDados.getConexao());
+        System.out.println("[DEBUG] Conexão inicializada no ConfirmarPresencaWindow.");
+    }
+
+    /**
+     * Carrega os eventos nos quais o usuário pode confirmar presença.
+     */
     private void carregarEventosParaConfirmacao() {
         try {
-            List<Evento> eventos = InscricaoDao.listarEventosParaConfirmacao(LoginManager.getUsuario().getId());
+            int participanteId = LoginManager.getUsuario().getId();
+            List<Evento> eventos = InscricaoDao.listarEventosParaConfirmacao(participanteId);
+
             DefaultTableModel modeloTabela = (DefaultTableModel) tabelaEventos.getModel();
             modeloTabela.setRowCount(0); // Limpa a tabela antes de carregar novos dados
             for (Evento evento : eventos) {
@@ -58,14 +82,25 @@ public class ConfirmarPresencaWindow extends JFrame {
                     evento.getId(),
                     evento.getTitulo(),
                     evento.getDataEvento(),
-                    evento.getHoraEvento()
+                    evento.getHoraEvento(),
+                    evento.getLocal()
                 });
             }
+
+            if (eventos.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nenhum evento disponível para confirmação de presença.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+            }
+
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Erro ao carregar eventos: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
+    /**
+     * Confirma a presença no evento selecionado.
+     */
     private void confirmarPresenca() {
         int linhaSelecionada = tabelaEventos.getSelectedRow();
         if (linhaSelecionada == -1) {
@@ -75,7 +110,9 @@ public class ConfirmarPresencaWindow extends JFrame {
 
         try {
             int eventoId = (int) tabelaEventos.getValueAt(linhaSelecionada, 0);
-            boolean sucesso = InscricaoDao.confirmarPresenca(LoginManager.getUsuario().getId(), eventoId);
+            int participanteId = LoginManager.getUsuario().getId();
+
+            boolean sucesso = InscricaoDao.confirmarPresenca(participanteId, eventoId);
 
             if (sucesso) {
                 JOptionPane.showMessageDialog(this, "Presença confirmada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
@@ -85,6 +122,7 @@ public class ConfirmarPresencaWindow extends JFrame {
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Erro ao confirmar presença: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 }

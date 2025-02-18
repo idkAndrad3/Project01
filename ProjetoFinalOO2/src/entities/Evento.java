@@ -23,7 +23,7 @@ public class Evento {
 	private Duration duracaoEvento;
 	private HashMap<Integer, Administrador> organizadores;
 	private HashMap<Integer, Participante> participantes;
-
+	
 	// private ADMINISTRADORRESPONSAVEL ver como vou fazer para adicionar o adm e
 	// participantes
 	public Evento(Integer id, String titulo, String local, boolean isLink, String descricao, int capacidadeMaxima, StatusEvento status,
@@ -42,8 +42,8 @@ public class Evento {
 		this.horaEvento = horaEvento;
 		this.duracaoEvento = duracaoEvento;
 
-		this.organizadores = organizadores;
-		this.participantes = participantes;
+		this.organizadores = organizadores == null ? new HashMap<>() : organizadores;;
+		this.participantes = participantes== null ? new HashMap<>() : participantes;;
 	}
 
 	public void adicionarOrganizador(Administrador administrador) {
@@ -204,5 +204,23 @@ public class Evento {
 		this.participantes = participantes;
 	}
 
+	public String toString() {
+	    return this.titulo; // Exibe apenas o título no JComboBox
+	}
 	
+	public int getCapacidadeRestante() {
+	    return capacidadeMaxima - participantes.size();
+	}
+
+	
+	
+	private int quantidadeInscricoes;
+
+	public int getQuantidadeInscricoes() {
+	    return quantidadeInscricoes;
+	}
+
+	public void setQuantidadeInscricoes(int quantidadeInscricoes) {
+	    this.quantidadeInscricoes = quantidadeInscricoes;
+	}
 }

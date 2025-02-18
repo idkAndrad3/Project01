@@ -3,6 +3,9 @@ package gui;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -46,7 +49,7 @@ public class PainelAdmin extends JFrame {
 
     private void inicializarComponentes() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 450, 300);
+        setBounds(100, 100, 450, 500); // Aumentei o tamanho para acomodar mais botões
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -59,7 +62,6 @@ public class PainelAdmin extends JFrame {
                 abrirCriarEventoWindow();
             }
         });
-
         btnCriarEvento.setBounds(136, 55, 128, 21);
         contentPane.add(btnCriarEvento);
 
@@ -75,7 +77,7 @@ public class PainelAdmin extends JFrame {
         JButton btnVisualizarEvento = new JButton("Visualizar Evento");
         btnVisualizarEvento.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                abrirVisualizarEventosWindow(); // Altere para chamar o método correto
+                abrirVisualizarEventosWindow();
             }
         });
         btnVisualizarEvento.setBounds(136, 117, 128, 21);
@@ -89,6 +91,42 @@ public class PainelAdmin extends JFrame {
         });
         btnExcluirEvento.setBounds(136, 148, 128, 21);
         contentPane.add(btnExcluirEvento);
+
+        JButton btnRelatorioParticipantes = new JButton("Relatório Participantes");
+        btnRelatorioParticipantes.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                abrirRelatorioParticipantesWindow();
+            }
+        });
+        btnRelatorioParticipantes.setBounds(136, 179, 180, 21); // Botão para Relatório de Participantes
+        contentPane.add(btnRelatorioParticipantes);
+
+        JButton btnEventosPopulares = new JButton("Eventos Populares");
+        btnEventosPopulares.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                abrirRelatorioEventosPopularesWindow();
+            }
+        });
+        btnEventosPopulares.setBounds(136, 210, 180, 21); // Botão para Eventos Populares
+        contentPane.add(btnEventosPopulares);
+
+        JButton btnEventosFuturos = new JButton("Eventos Futuros");
+        btnEventosFuturos.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                abrirRelatorioEventosFuturosWindow();
+            }
+        });
+        btnEventosFuturos.setBounds(136, 241, 180, 21); // Botão para Eventos Futuros
+        contentPane.add(btnEventosFuturos);
+
+        JButton btnRelatorioDetalhado = new JButton("Relatório Detalhado Evento");
+        btnRelatorioDetalhado.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                abrirRelatorioDetalhadoEventoWindow();
+            }
+        });
+        btnRelatorioDetalhado.setBounds(136, 272, 180, 21); // Botão para Relatório Detalhado de Evento
+        contentPane.add(btnRelatorioDetalhado);
 
         JLabel lblPainelAdmin = new JLabel("Painel Admin");
         lblPainelAdmin.setBounds(175, 10, 103, 13);
@@ -153,8 +191,66 @@ public class PainelAdmin extends JFrame {
      * Ação do botão "Visualizar Evento".
      */
     private void abrirVisualizarEventosWindow() {
-        // Abra a janela para visualizar a lista de eventos
         VisualizarEventoWindow visualizarEventosWindow = new VisualizarEventoWindow();
         visualizarEventosWindow.setVisible(true);
     }
+
+    /**
+     * Ação do botão "Relatório Participantes".
+     */
+    private void abrirRelatorioParticipantesWindow() {
+        try {
+            // Garantindo que a conexão esteja sendo obtida corretamente
+            Connection conexao = BancoDados.getConexao();
+            RelatorioParticipantesWindow relatorioWindow = new RelatorioParticipantesWindow(conexao);
+            relatorioWindow.setVisible(true);
+        } catch (SQLException | IOException e) {
+            JOptionPane.showMessageDialog(this, "Erro ao abrir o relatório de participantes: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+
+    /**
+     * Ação do botão "Eventos Populares".
+     */
+ // Exemplo de como a conexão é passada corretamente para a janela de relatórios
+    private void abrirRelatorioEventosPopularesWindow() {
+        try {
+            // Garantindo que a conexão esteja sendo obtida corretamente
+            Connection conexao = BancoDados.getConexao();  
+            RelatorioPopularesWindow relatorioWindow = new RelatorioPopularesWindow(conexao);
+            relatorioWindow.setVisible(true);
+        } catch (SQLException | IOException e) {
+            JOptionPane.showMessageDialog(this, "Erro ao abrir o relatório: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Ação do botão "Eventos Futuros".
+     */
+    private void abrirRelatorioEventosFuturosWindow() {
+        try {
+            // Garantindo que a conexão esteja sendo obtida corretamente
+            Connection conexao = BancoDados.getConexao();
+            RelatorioEventosFuturosWindow relatorioWindow = new RelatorioEventosFuturosWindow(conexao);
+            relatorioWindow.setVisible(true);
+        } catch (SQLException | IOException e) {
+            JOptionPane.showMessageDialog(this, "Erro ao abrir o relatório: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Ação do botão "Relatório Detalhado de Evento".
+     */
+    private void abrirRelatorioDetalhadoEventoWindow() {
+        try {
+            // Garantindo que a conexão esteja sendo obtida corretamente
+            Connection conexao = BancoDados.getConexao();
+            RelatorioDetalhadoWindow relatorioWindow = new RelatorioDetalhadoWindow(conexao);
+            relatorioWindow.setVisible(true);
+        } catch (SQLException | IOException e) {
+            JOptionPane.showMessageDialog(this, "Erro ao abrir o relatório: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
 }

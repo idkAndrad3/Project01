@@ -6,7 +6,9 @@ public class Participante extends User{
 	
 	private Date dataNascimento;
 	private String CPF;
-
+	private String statusInscricao;
+	private boolean presencaConfirmada;
+	
 	public Participante(Integer id, String nome, String email, String senha, Date dataNascimento, String CPF) {
 	    super(id, nome, email, senha, TipoUsuario.DEFAULT);
 	    this.dataNascimento = dataNascimento;
@@ -41,4 +43,19 @@ public class Participante extends User{
 	    return true;
 	}
 
+	public String getStatusInscricao() {
+	    return statusInscricao;
+	}
+
+	public void setStatusInscricao(String statusInscricao) {
+	    this.statusInscricao = statusInscricao;
+	}
+
+	public boolean isPresencaConfirmada() {
+	    return presencaConfirmada;
+	}
+
+	public void setPresencaConfirmada(boolean presencaConfirmada) {
+	    this.presencaConfirmada = presencaConfirmada;
+	}
 }

@@ -5,7 +5,10 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
+import entities.Evento;
 import entities.StatusInscricao;
 
 public class InscricaoDao {
@@ -195,4 +198,47 @@ public class InscricaoDao {
 
         return false; // Não inscrito
     }
+    
+    public static List<Evento> listarEventosParaConfirmacao(int participanteId) throws SQLException {
+        if (conexaoBD == null) {
+            throw new SQLException("Conexão com o banco de dados não foi inicializada!");
+        }
+
+        String sql = """
+            SELECT e.id, e.titulo, e.data, e.hora, e.local
+            FROM evento e
+            INNER JOIN inscricoes i ON e.id = i.evento_id
+            WHERE i.participante_id = ?
+              AND i.presenca_confirmada = false
+              AND e.data <= CURRENT_DATE()
+        """;
+
+        List<Evento> eventos = new ArrayList<>();
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql)) {
+            stmt.setInt(1, participanteId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Evento evento = new Evento(
+                        rs.getInt("id"),
+                        rs.getString("titulo"),
+                        rs.getString("local"),
+                        false, // Assume que não é um evento remoto
+                        null, // Descrição não carregada neste método
+                        0, // Capacidade máxima não carregada neste método
+                        null, // Status não carregado neste método
+                        null, // Categoria não carregada neste método
+                        0.0, // Preço não carregado neste método
+                        rs.getDate("data"),
+                        rs.getTime("hora"),
+                        null, // Duração não carregada neste método
+                        null, // Organizadores não carregados neste método
+                        null // Participantes não carregados neste método
+                    );
+                    eventos.add(evento);
+                }
+            }
+        }
+        return eventos;
+    }
 }
+

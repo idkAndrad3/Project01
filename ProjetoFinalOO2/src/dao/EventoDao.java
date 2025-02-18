@@ -18,6 +18,7 @@ import entities.Evento;
 import entities.Participante;
 import entities.StatusEvento;
 import entities.User;
+import service.LoginManager;
 
 public class EventoDao {
 
@@ -712,4 +713,284 @@ public class EventoDao {
 	        BancoDados.finalizarStatement(statement);
 	    }
 	}
+	
+	public static List<Evento> listarEventosInscritos(int participanteId) throws SQLException {
+        if (conexaoBD == null) {
+            throw new SQLException("Conexão com o banco de dados não foi inicializada!");
+        }
+
+        String sql = """
+            SELECT e.id, e.titulo, e.data, e.hora, e.local
+            FROM evento e
+            INNER JOIN inscricoes i ON e.id = i.evento_id
+            WHERE i.participante_id = ?
+        """;
+
+        List<Evento> eventos = new ArrayList<>();
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql)) {
+            stmt.setInt(1, participanteId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Evento evento = new Evento(
+                        rs.getInt("id"),
+                        rs.getString("titulo"),
+                        rs.getString("local"),
+                        false, // Assume que não é um evento remoto
+                        null, // Descrição não carregada neste método
+                        0, // Capacidade máxima não carregada neste método
+                        null, // Status não carregado neste método
+                        null, // Categoria não carregada neste método
+                        0.0, // Preço não carregado neste método
+                        rs.getDate("data"),
+                        rs.getTime("hora"),
+                        null, // Duração não carregada neste método
+                        null, // Organizadores não carregados neste método
+                        null // Participantes não carregados neste método
+                    );
+                    eventos.add(evento);
+                }
+            }
+        }
+        return eventos;
+    }
+
+    /**
+     * Cancela a inscrição de um participante em um evento.
+     */
+    public static boolean cancelarInscricao(int participanteId, int eventoId) throws SQLException {
+        if (conexaoBD == null) {
+            throw new SQLException("Conexão com o banco de dados não foi inicializada!");
+        }
+
+        String sql = """
+            DELETE FROM inscricoes
+            WHERE participante_id = ? AND evento_id = ?
+            AND EXISTS (
+                SELECT 1 FROM evento
+                WHERE id = ? AND status = 'aberto'
+                  AND data > CURRENT_DATE()
+            )
+        """;
+
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql)) {
+            stmt.setInt(1, participanteId);
+            stmt.setInt(2, eventoId);
+            stmt.setInt(3, eventoId);
+
+            return stmt.executeUpdate() > 0; // Retorna true se pelo menos uma linha foi afetada
+        }
+    }
+    
+    public static List<Participante> listarParticipantesEvento(int eventoId) throws SQLException {
+        String sql = """
+            SELECT u.id, u.nome_completo AS nome, u.email, p.cpf, i.status_inscricao, i.presenca_confirmada
+            FROM inscricoes i
+            INNER JOIN usuario u ON i.participante_id = u.id
+            LEFT JOIN participante p ON p.id = u.id
+            WHERE i.evento_id = ?
+        """;
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql)) {
+            stmt.setInt(1, eventoId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                List<Participante> participantes = new ArrayList<>();
+                while (rs.next()) {
+                    String cpf = rs.getString("cpf");
+                    if (cpf == null) {
+                        cpf = "Não informado"; // Define um valor padrão
+                    } else {
+                        cpf = cpf.replaceAll("[^0-9]", ""); // Remove caracteres não numéricos
+                    }
+                    
+                    Participante participante = new Participante(
+                        rs.getInt("id"),
+                        rs.getString("nome"),
+                        rs.getString("email"),
+                        null, // Senha omitida
+                        null, // Data de nascimento omitida
+                        cpf  // CPF tratado
+                    );
+                    participantes.add(participante);
+                }
+                return participantes;
+            }
+        }
+    }
+
+
+    public static List<Evento> listarEventosPopulares() throws SQLException {
+        String sql = """
+            SELECT e.id, e.titulo, COUNT(i.id) AS quantidade_inscricoes
+            FROM evento e
+            LEFT JOIN inscricoes i ON e.id = i.evento_id
+            GROUP BY e.id, e.titulo
+            ORDER BY quantidade_inscricoes DESC
+            LIMIT 10;
+        """;
+
+        List<Evento> eventos = new ArrayList<>();
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+            	Evento evento = new Evento(
+            		    rs.getInt("id"),
+            		    rs.getString("titulo"),
+            		    null, // Local omitido
+            		    false, // Evento não remoto
+            		    null, // Descrição omitida
+            		    0, // Capacidade omitida
+            		    null, // Status omitido
+            		    null, // Categoria omitida
+            		    0.0, // Preço omitido
+            		    null, // Data omitida
+            		    null, // Hora omitida
+            		    null, // Duração omitida
+            		    null, // Organizadores omitidos
+            		    null  // Participantes omitidos
+            		);
+            		evento.setQuantidadeInscricoes(rs.getInt("quantidade_inscricoes"));
+            		eventos.add(evento);
+            }
+        }
+        return eventos;
+    }
+
+
+    public static List<Evento> listarEventosFuturos() throws SQLException {
+        String sql = """
+            SELECT e.id, e.titulo, e.data, e.capacidade_maxima, 
+                   (e.capacidade_maxima - COUNT(i.id)) AS capacidade_restante
+            FROM evento e
+            LEFT JOIN inscricoes i ON e.id = i.evento_id
+            WHERE e.data > CURRENT_DATE
+            GROUP BY e.id, e.titulo, e.data, e.capacidade_maxima
+        """;
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            List<Evento> eventos = new ArrayList<>();
+            while (rs.next()) {
+                Evento evento = new Evento(
+                    rs.getInt("id"),
+                    rs.getString("titulo"),
+                    null, // Local omitido
+                    false, // Evento não remoto
+                    null, // Descrição omitida
+                    rs.getInt("capacidade_restante"),
+                    null, // Status omitido
+                    null, // Categoria omitida
+                    0.0,  // Preço omitido
+                    rs.getDate("data"),
+                    null, // Hora omitida
+                    null, // Duração omitida
+                    null, // Organizadores omitidos
+                    null  // Participantes omitidos
+                );
+                eventos.add(evento);
+            }
+            return eventos;
+        }
+    }
+    
+    public static List<String> listarTodosEventosSimplificado() throws SQLException {
+        String sql = "SELECT id, titulo FROM evento ORDER BY data ASC;";
+        
+        List<String> eventos = new ArrayList<>();
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                eventos.add(rs.getInt("id") + " - " + rs.getString("titulo")); // Formato "ID - Título"
+            }
+        }
+        return eventos;
+    }
+    
+    public static List<Evento> listarEventosInscritosUsuario() throws SQLException {
+        if (!LoginManager.isLogado()) {
+            throw new SQLException("Usuário não está logado.");
+        }
+        
+        String sql = """
+            SELECT e.id, e.titulo, e.local, e.is_link, e.descricao, e.capacidade_maxima,
+                   e.status, e.categoria, e.preco, e.data, e.hora, e.duracao
+            FROM evento e
+            INNER JOIN inscricoes i ON e.id = i.evento_id
+            WHERE i.participante_id = ? AND i.status_inscricao = 'ativa'
+        """;
+        
+        List<Evento> eventos = new ArrayList<>();
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql)) {
+            stmt.setInt(1, LoginManager.getUsuario().getId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Evento evento = new Evento(
+                        rs.getInt("id"),
+                        rs.getString("titulo"),
+                        rs.getString("local"),
+                        rs.getBoolean("is_link"),
+                        rs.getString("descricao"),
+                        rs.getInt("capacidade_maxima"),
+                        StatusEvento.getFromString(rs.getString("status")),
+                        CategoriaEvento.getFromString(rs.getString("categoria")),
+                        rs.getDouble("preco"),
+                        rs.getDate("data"),
+                        rs.getTime("hora"),
+                        Duration.parse(rs.getString("duracao")),
+                        new HashMap<>(), // Organizadores omitidos
+                        new HashMap<>()  // Participantes omitidos
+                    );
+                    eventos.add(evento);
+                }
+            }
+        }
+        return eventos;
+    }
+
+
+    public static List<Evento> listarHistoricoEventosUsuario() throws SQLException {
+        if (!LoginManager.isLogado()) {
+            throw new SQLException("Usuário não está logado.");
+        }
+        
+        String sql = """
+            SELECT e.id, e.titulo, e.local, e.is_link, e.descricao, e.capacidade_maxima,
+                   e.status, e.categoria, e.preco, e.data, e.hora, e.duracao
+            FROM evento e
+            INNER JOIN inscricoes i ON e.id = i.evento_id
+            WHERE i.participante_id = ? AND e.data < CURRENT_DATE
+        """;
+        
+        List<Evento> eventos = new ArrayList<>();
+        try (PreparedStatement stmt = conexaoBD.prepareStatement(sql)) {
+            stmt.setInt(1, LoginManager.getUsuario().getId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Evento evento = new Evento(
+                        rs.getInt("id"),
+                        rs.getString("titulo"),
+                        rs.getString("local"),
+                        rs.getBoolean("is_link"),
+                        rs.getString("descricao"),
+                        rs.getInt("capacidade_maxima"),
+                        StatusEvento.getFromString(rs.getString("status")),
+                        CategoriaEvento.getFromString(rs.getString("categoria")),
+                        rs.getDouble("preco"),
+                        rs.getDate("data"),
+                        rs.getTime("hora"),
+                        Duration.parse(rs.getString("duracao")),
+                        new HashMap<>(), // Organizadores omitidos
+                        new HashMap<>()  // Participantes omitidos
+                    );
+                    eventos.add(evento);
+                }
+            }
+        }
+        return eventos;
+    }
+
 }
+
+
+
+
+

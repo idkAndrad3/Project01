@@ -3,6 +3,7 @@ package gui;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -22,9 +23,6 @@ public class LoginWindow extends JFrame {
     private JTextField txtLogin;
     private JTextField txtSenha;
 
-    /**
-     * Launch the application.
-     */
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -38,9 +36,6 @@ public class LoginWindow extends JFrame {
         });
     }
 
-    /**
-     * Create the frame.
-     */
     public LoginWindow() {
         iniciarComponentes();
     }
@@ -76,48 +71,53 @@ public class LoginWindow extends JFrame {
         btnEntrar.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
-                    // Inicializa a conexão antes de tentar login
                     LoginManager.inicializarConexao();
-                    realizarLogin(); // Chama o método para realizar o login
+                    realizarLogin();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, "Erro ao conectar ao banco: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
-
         btnEntrar.setBounds(205, 215, 150, 30);
         contentPane.add(btnEntrar);
+
+        JButton btnCadastrar = new JButton("Cadastrar");
+        btnCadastrar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+					new CadastroUsuarioWindow().setVisible(true);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+            }
+        });
+        btnCadastrar.setBounds(205, 260, 150, 30);
+        contentPane.add(btnCadastrar);
 
         JLabel lblTelaLogin = new JLabel("Tela de Login");
         lblTelaLogin.setBounds(205, 22, 150, 13);
         contentPane.add(lblTelaLogin);
     }
 
-    /**
-     * Realiza a tentativa de login utilizando LoginManager.
-     */
     private void realizarLogin() {
         String email = txtLogin.getText();
         String senha = txtSenha.getText();
 
         try {
             LoginManager.login(email, senha);
-
             TipoUsuario tipoUsuario = LoginManager.getUsuario().getTipoUsuario();
 
-            // Redireciona de acordo com o tipo de usuário
             if (tipoUsuario == TipoUsuario.admin) {
                 JOptionPane.showMessageDialog(this, "Bem-vindo, Administrador!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                PainelAdmin adminPanel = new PainelAdmin(); // Redireciona para PainelAdmin
+                PainelAdmin adminPanel = new PainelAdmin();
                 adminPanel.setVisible(true);
             } else if (tipoUsuario == TipoUsuario.DEFAULT) {
                 JOptionPane.showMessageDialog(this, "Bem-vindo, Usuário!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                PainelUsuario userPanel = new PainelUsuario(); // Redireciona para PainelUsuario
+                PainelUsuario userPanel = new PainelUsuario();
                 userPanel.setVisible(true);
             }
-
-            this.dispose(); // Fecha a tela de login
-
+            this.dispose();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Erro ao realizar login: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }

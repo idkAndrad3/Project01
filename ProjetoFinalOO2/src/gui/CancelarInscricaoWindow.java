@@ -1,19 +1,27 @@
 package gui;
 
-import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+
 import dao.EventoDao;
+import entities.Evento;
 import service.LoginManager;
 
 public class CancelarInscricaoWindow extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
-    private JComboBox<String> comboBoxEventos;
+    private JComboBox<Evento> comboBoxEventos;
     private JButton btnCancelar;
+    
 
     public CancelarInscricaoWindow() {
         try {
@@ -61,16 +69,16 @@ public class CancelarInscricaoWindow extends JFrame {
 
     private void carregarEventos() {
         try {
-            // Obtém os eventos que o usuário está inscrito
-            List<String> eventosInscritos = EventoDao.listarEventosInscritos(LoginManager.getUsuario().getId());
+            // Obtém os eventos nos quais o usuário está inscrito
+            List<Evento> eventosInscritos = EventoDao.listarEventosInscritos(LoginManager.getUsuario().getId());
             if (eventosInscritos.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Você não está inscrito em nenhum evento.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
                 return;
             }
 
-            // Popula o comboBox com os eventos inscritos
-            for (String evento : eventosInscritos) {
+            // Popula o comboBox com os eventos inscritos (usa o título para exibição)
+            for (Evento evento : eventosInscritos) {
                 comboBoxEventos.addItem(evento);
             }
         } catch (Exception e) {
@@ -81,15 +89,15 @@ public class CancelarInscricaoWindow extends JFrame {
 
     private void cancelarInscricao() {
         try {
-            // Obtém o evento selecionado
-            String eventoSelecionado = (String) comboBoxEventos.getSelectedItem();
+            // Obtém o evento selecionado do comboBox
+            Evento eventoSelecionado = (Evento) comboBoxEventos.getSelectedItem();
             if (eventoSelecionado == null) {
                 JOptionPane.showMessageDialog(this, "Selecione um evento para cancelar a inscrição.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             // Cancela a inscrição no banco de dados
-            boolean cancelado = EventoDao.cancelarInscricao(LoginManager.getUsuario().getId(), eventoSelecionado);
+            boolean cancelado = EventoDao.cancelarInscricao(LoginManager.getUsuario().getId(), eventoSelecionado.getId());
             if (cancelado) {
                 JOptionPane.showMessageDialog(this, "Inscrição cancelada com sucesso!", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
                 dispose();

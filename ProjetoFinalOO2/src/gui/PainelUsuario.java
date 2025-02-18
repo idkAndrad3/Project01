@@ -3,6 +3,7 @@ package gui;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -20,9 +21,6 @@ public class PainelUsuario extends JFrame {
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
 
-    /**
-     * Launch the application.
-     */
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -36,9 +34,6 @@ public class PainelUsuario extends JFrame {
         });
     }
 
-    /**
-     * Create the frame.
-     */
     public PainelUsuario() {
         try {
             inicializarConexao();
@@ -47,19 +42,19 @@ public class PainelUsuario extends JFrame {
             JOptionPane.showMessageDialog(this, "Erro ao inicializar conexão com o banco de dados: " + e.getMessage(),
                     "Erro", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
-            dispose(); // Fecha a janela se a inicialização falhar
+            dispose();
         }
     }
 
     private void inicializarConexao() throws SQLException, Exception {
         Connection conexao = BancoDados.getConexao();
-        EventoDao.inicializarConexao(conexao); // Inicializa o EventoDao com a conexão ativa
+        EventoDao.inicializarConexao(conexao);
         System.out.println("[DEBUG] Conexão inicializada para o Painel do Usuário.");
     }
 
     private void iniciarComponentes() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 450, 300);
+        setBounds(100, 100, 450, 400);
         contentPane = new JPanel();
         setContentPane(contentPane);
         contentPane.setLayout(null);
@@ -73,7 +68,11 @@ public class PainelUsuario extends JFrame {
         btnVisualizarEventos.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                new VisualizarEventoWindow().setVisible(true);
+                try {
+                    new VisualizarEventoWindow().setVisible(true);
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
             }
         });
         contentPane.add(btnVisualizarEventos);
@@ -107,5 +106,35 @@ public class PainelUsuario extends JFrame {
             }
         });
         contentPane.add(btnConfirmarPresenca);
+
+        JButton btnRelatoriosParticipantes = new JButton("Relatórios de Participação");
+        btnRelatoriosParticipantes.setBounds(140, 210, 160, 25);
+        btnRelatoriosParticipantes.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+					new RelatorioParticipanteWindow().setVisible(true);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+            }
+        });
+        contentPane.add(btnRelatoriosParticipantes);
+
+        JButton btnHistoricoEventos = new JButton("Histórico de Eventos");
+        btnHistoricoEventos.setBounds(140, 250, 160, 25);
+        btnHistoricoEventos.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+					new HistoricoEventosWindow().setVisible(true);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+            }
+        });
+        contentPane.add(btnHistoricoEventos);
     }
 }
